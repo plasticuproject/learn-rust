@@ -68,14 +68,13 @@ mod tests {
 
     #[test]
     fn write_a_match() -> Result<(), Error> {
-        let _file = File::create("testfile.txt")?;
-        let outfile = PathBuf::from("testfile.txt");
+        let _file = File::create("test_write_file.txt")?;
+        let outfile = PathBuf::from("test_write_file.txt");
         let num = 1;
         write_matches("lorem ipsum\ndolor sit amet", &num, "lorem", &outfile)?;
-        let mut file = File::open("testfile.txt")?;
+        let mut file = File::open("test_write_file.txt")?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        println!("{}", contents);
         remove_file(outfile)?;
         assert_eq!(contents, "LINE# 1: lorem ipsum\n");
 
@@ -84,9 +83,9 @@ mod tests {
 
     #[test]
     fn purge_a_file() -> Result<(), Error> {
-        let mut file = File::create("testfile.txt")?;
+        let mut file = File::create("test_purge_file.txt")?;
         writeln!(file, "A test\nActual content\nMore content\nAnother test")?;
-        let outfile = PathBuf::from("testfile.txt");
+        let outfile = PathBuf::from("test_purge_file.txt");
         purge_file(&outfile)?;
         match &outfile.exists() {
             false => Some(outfile),
