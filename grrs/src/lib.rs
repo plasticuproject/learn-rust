@@ -3,6 +3,20 @@ use std::fs::{remove_file, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
+/// Writes pattern matches from supplied string slice with line number to output.
+///
+/// # Example
+///
+/// ```rust
+/// # use anyhow::{Error, Result};
+/// # fn main() -> Result<(), Error> {
+/// let line_num = 1;
+/// let mut output = Vec::new();
+/// grrs::print_matches("This prints results", &line_num, "prints", &mut output)?;
+/// assert_eq!(output, b"LINE# 1: This prints results\n");
+/// # Ok(())
+/// # }
+/// ```
 pub fn print_matches(
     content: &str,
     num: &i32,
@@ -18,17 +32,34 @@ pub fn print_matches(
     Ok(())
 }
 
+/// Writes pattern matches from supplied string slice with line number to new file of
+/// which the name is supplied.
+///
+/// # Example
+///
+/// ```rust
+/// # use anyhow::{Error, Result};
+/// use std::io::Read;
+/// # fn main() -> Result<(), Error> {
+/// std::fs::File::create("test_write_file.txt")?;
+/// let outfile = std::path::PathBuf::from("test_write_file.txt");
+/// let num = 1;
+/// grrs::write_matches("lorem ipsum\ndolor sit amet", &num, "lorem", &outfile)?;
+/// let mut file = std::fs::File::open("test_write_file.txt")?;
+/// let mut contents = String::new();
+/// file.read_to_string(&mut contents)?;
+/// # std::fs::remove_file(outfile)?;
+/// assert_eq!(contents, "LINE# 1: lorem ipsum\n");
+/// # Ok(())
+/// # }
+/// ```
 pub fn write_matches(
     content: &str,
     num: &i32,
     pattern: &str,
     outfile: &PathBuf,
 ) -> Result<(), Error> {
-    let file_handler = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(outfile)
-        .unwrap();
+    let file_handler = OpenOptions::new().create(true).append(true).open(outfile)?;
     let mut writer = BufWriter::new(file_handler);
     let num = num.to_string();
     for line in content.lines() {
@@ -41,6 +72,27 @@ pub fn write_matches(
     Ok(())
 }
 
+/// Detects if file by supplied name exists and deletes it if so.
+/// To be called before grrs::write_matches() to make sure a new, empty file
+/// is created, or else the output will be appended to supplied file.
+///
+/// # Example
+///
+/// ```rust
+/// # use anyhow::{Error, Result};
+/// use std::io::Write;
+/// # fn main() -> Result<(), Error> {
+/// # let mut file = std::fs::File::create("test_purge_file.txt")?;
+/// # writeln!(file, "A test\nActual content\nMore content\nAnother test")?;
+/// let outfile = std::path::PathBuf::from("test_purge_file.txt");
+/// grrs::purge_file(&outfile)?;
+/// match &outfile.exists() {
+///     false => Some(outfile),
+///     true => return panic!("file was not purged"),
+/// };
+/// # Ok(())
+/// }
+/// ```
 pub fn purge_file(outfile: &PathBuf) -> Result<(), Error> {
     if outfile.exists() {
         remove_file(outfile)?;
@@ -68,7 +120,7 @@ mod tests {
 
     #[test]
     fn write_a_match() -> Result<(), Error> {
-        let _file = File::create("test_write_file.txt")?;
+        File::create("test_write_file.txt")?;
         let outfile = PathBuf::from("test_write_file.txt");
         let num = 1;
         write_matches("lorem ipsum\ndolor sit amet", &num, "lorem", &outfile)?;
